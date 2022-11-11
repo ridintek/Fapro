@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 /**
  * Font Awesome Pro Downloader v1.0
@@ -16,52 +18,108 @@
 
 if (php_sapi_name() != 'cli') die("This program cannot be run in server mode.");
 
-define('FA_URL', 'https://pro.fontawesome.com/releases/v6.0.0-beta3/');
-
-$ds = DIRECTORY_SEPARATOR;
-
-function parseURL(string $str): array
+class FontAwesomeProDownloader
 {
-  $data = [];
-  $parse = FALSE;
-  $s = '';
-  
-  for ($x = 0; $x < strlen($str); $x++) {
-    if ($parse) {
-      if (substr($str, $x, 1) == ')') {
-        $parse = FALSE;
-        $data[] = FA_URL . substr($s, 2);
-        $s = '';
-      } else {
-        $s .= substr($str, $x, 1);
+  private static $fa_url = 'https://site-assets.fontawesome.com/releases/v6.2.0/';
+  private static $fa_dir = '';
+
+  /**
+   * Download FA Pro CSS file.
+   * @return string|null Return absolute path to downloaded css file.
+   */
+  public static function downloadCSS()
+  {
+    self::$fa_dir = __DIR__ . '/fa_v' . self::getFAVersion() . '/';
+    $css = self::$fa_dir . 'css/all.css';
+
+    if (!is_dir(self::$fa_dir))         mkdir(self::$fa_dir);
+    if (!is_dir(self::$fa_dir . 'css')) mkdir(self::$fa_dir . 'css');
+
+    echo "Downloading all.css file.\r\n";
+
+    if (file_put_contents($css, file_get_contents(self::$fa_url . 'css/all.css'))) {
+      echo "File all.css successfully downloaded.\r\n";
+      return $css;
+    }
+
+    echo "File all.css failed to download.\r\n";
+    return NULL;
+  }
+
+  /**
+   * Get FontAwesome Pro version.
+   * @return string|null Return FA Pro version.
+   */
+  public static function getFAVersion()
+  {
+    $seg = explode('/', self::$fa_url);
+
+    if (isset($seg[4])) {
+      return substr($seg[4], 1);
+    }
+    return NULL;
+  }
+
+  public static function parseCSS(string $filename)
+  {
+    if (!is_file($filename)) {
+      die("CSS file {$filename} is not found.\r\n");
+    }
+
+    if (!is_dir(self::$fa_dir . 'webfonts')) mkdir(self::$fa_dir . 'webfonts');
+
+    $hFile = fopen($filename, 'r');
+
+    while (($line = fgets($hFile)) !== FALSE) {
+      if (strpos($line, 'url(', 0) !== FALSE) {
+        $r = self::parseURL($line);
+
+        foreach ($r as $url) {
+          $filename = basename($url);
+          $location = self::$fa_dir . "webfonts/{$filename}";
+          echo "Downloading file {$url} to {$location}\r\n";
+          file_put_contents($location, file_get_contents($url));
+        }
       }
     }
-    
-    if (substr($str, $x, 4) == 'url(') {
-      $parse = TRUE;
-      $x += 4;
-    }
+
+    echo "All resources have been downloaded successfully.\r\n";
+
+    fclose($hFile);
   }
-  
-  return $data;
-}
 
-$hFile = fopen(__DIR__ . "{$ds}css{$ds}all.css", 'r');
+  public static function parseURL(string $str): array
+  {
+    $data = [];
+    $parse = FALSE;
+    $s = '';
 
-while (($line = fgets($hFile)) !== FALSE) {
-  if ($pos = strpos($line, 'url(', 0)) {
-    $r = parseURL($line);
-    
-    if ($r) {
-      foreach ($r as $url) {
-        $ret = 0;
-        $filename = basename($url);
-        $location = __DIR__ . "{$ds}webfonts{$ds}{$filename}";
-        echo "Downloading file {$url} to {$location}\r\n";
-        file_put_contents($location, file_get_contents($url));
+    for ($x = 0; $x < strlen($str); $x++) {
+      if ($parse) {
+        if (substr($str, $x, 1) == ')') {
+          $parse = FALSE;
+          $data[] = self::$fa_url . substr($s, 2);
+          $s = '';
+        } else {
+          $s .= substr($str, $x, 1);
+        }
+      }
+
+      if (substr($str, $x, 4) == 'url(') {
+        $parse = TRUE;
+        $x += 4;
       }
     }
+
+    return $data;
+  }
+
+  public static function start()
+  {
+    if ($cssFile = self::downloadCSS()) {
+      self::parseCSS($cssFile);
+    }
   }
 }
 
-fclose($hFile);
+FontAwesomeProDownloader::start();
