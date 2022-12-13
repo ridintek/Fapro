@@ -8,19 +8,16 @@ declare(strict_types=1);
  * @Author: Royyan Farrodain
  * @Date: 2021-12-15
  * 
- * YOU MAY USE THESE SOFTWARE FOR NON-COMMERCIAL USE.
- * BUT YOU SHOULD PURCHASE IT TO SUPPORT DEVELOPERS IF YOU USE PRO VERSION.
- *
- * THIS SOFTWARE WAS INTENDED FOR TESTING UNIT ONLY.
- * WE ARE NOT RESPONSIBLE FOR ANY ILLEGAL ACT FOR USING THIS SOFTWARE.
- *
+ * READ README.md
  */
 
 if (php_sapi_name() != 'cli') die("This program cannot be run in server mode.");
 
+const VERSION = '6.2.1';
+
 class FontAwesomeProDownloader
 {
-  private static $fa_url = 'https://site-assets.fontawesome.com/releases/v6.2.0/';
+  private static $fa_url = 'https://site-assets.fontawesome.com/releases/v' . VERSION . '/';
   private static $fa_dir = '';
 
   /**
@@ -29,7 +26,7 @@ class FontAwesomeProDownloader
    */
   public static function downloadCSS()
   {
-    self::$fa_dir = __DIR__ . '/fa_v' . self::getFAVersion() . '/';
+    self::$fa_dir = __DIR__ . '/fa_v' . VERSION . '/';
     $css = self::$fa_dir . 'css/all.css';
 
     if (!is_dir(self::$fa_dir))         mkdir(self::$fa_dir);
@@ -43,20 +40,6 @@ class FontAwesomeProDownloader
     }
 
     echo "File all.css failed to download.\r\n";
-    return NULL;
-  }
-
-  /**
-   * Get FontAwesome Pro version.
-   * @return string|null Return FA Pro version.
-   */
-  public static function getFAVersion()
-  {
-    $seg = explode('/', self::$fa_url);
-
-    if (isset($seg[4])) {
-      return substr($seg[4], 1);
-    }
     return NULL;
   }
 
